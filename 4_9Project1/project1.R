@@ -37,12 +37,14 @@ dev.off()
 ## Creating Plot 4
 png(filename="plot4.png")
 par(mfrow=c(2,2))
-plot(totime,project1$Global_active_power,type="l",ylab="Global Active Power")
-plot(totime,project1$Voltage,type="l",ylab="Voltage")
-plot(totime,project1$Sub_metering_1,type="l",ylab="Energy sub metering")
+plot(totime,project1$Global_active_power,type="l",xlab="",
+     ylab="Global Active Power")
+plot(totime,project1$Voltage,type="l",xlab="", ylab="Voltage")
+plot(totime,project1$Sub_metering_1,type="l",xlab="",ylab="Energy sub metering")
 lines(totime,project1$Sub_metering_2,col="red")
 lines(totime,project1$Sub_metering_3,col="blue")
 legend("topright",lty=1, col=c("black","red","blue"),
       legend=c("Sub_metering_1","Sub_metering_2","Sub_metering_3"), bty="n")
-plot(totime,project1$Global_reactive_power,type="l",ylab="Global Reactive Power")
+plot(totime,project1$Global_reactive_power,type="l",xlab="",
+     ylab="Global Reactive Power")
 dev.off()
