@@ -1,0 +1,211 @@
+---
+title: "5Assessment2"
+author: "rachelxi"
+date: "20 March 2015"
+output: pdf_document
+---
+## Population Health and Economic Loss due to Weather Event across US, 1950-November 2011
+
+## Synopsis
+Across 1950-2011, Tornado has been the weather event leading to most fatalities and injuries within US. In terms of economic damage, Hurricane/Typhoon and Hail contributed to the largest losses on property and crop respectively. Interestingly, all losses on property due to Hurricane/Typhoon fall into the 2000-2009 interval with over 60 billion dollars. Overally speaking, for all economic damage related losses, property losses are the primary one. Further inverstigations could be conducted on some conjoint weather events(i.e. Blizzard/Heavy rain), newly formed or defined weather events since 1960, 1970 and the reason why crop losses record has been 0.0 before year 1990.
+
+## Data Processing
+The first step is to load the data from working directory.
+```{r,echo=TRUE}
+setwd("~/Documents/Datascience/5Assessment2")
+data<-read.csv(bzfile("repdata-data-StormData.csv.bz2"))
+```
+Then, as referred to codebook from National Weather Service, 48 primary weather events are defined and related data is extracted from the original one. Besides, as population heath and economic loss would be investigated in the report, 8 columns of orginial data are introduced ("BGN_DATE","EVTYPE","FATALITIES","INJURIES","PROPDMG","PROPDMGEXP","CROPDMG","CROPDMGEXP").The processed data is substituted into a new variable, StormData.
+```{r,echo=TRUE}
+Event <- c("ASTRONOMICAL LOW TIDE","AVALANCHE","BLIZZARD",
+         "COASTAL FLOOD","COLD/WIND CHILL","DEBRIS FLOW",
+         "DENSE FOG","DENSE SMOKE","DROUGHT","DUST DEVIL",
+         "DUST STORM","EXCESSIVE HEAT","EXTREME COLD/WIND CHILL",
+         "FLASH FLOOD","FLOOD","FREEZING FOG","FROST/FREEZE",
+         "FUNNEL CLOUD","HAIL","HEAT","HEAVY RAIN","HEAVY SNOW",
+         "HIGH SURF","HIGH WIND","HURRICANE/TYPHOON","ICE STORM",
+         "LAKESHORE FLOOD","LAKE-EFFECT SNOW","LIGHTNING",
+         "MARINE HAIL","MARINE HIGH WIND","MARINE STRONG WIND",
+         "MARINE THUNDERSTORM","RIP CURRENT","SEICHE","SLEET",
+         "STORM TIDE","STORM WIND","THUNDERSTORM WIND","TORNADO",
+         "TROPICAL DEPRESSION","TROPICAL STORM","TSUNAMI",
+         "VOLCANIC ASH","WATERSPOUT","WILDFIRE","WINTER STORM",
+         "WINTER WEATHER")
+index <- NULL
+INDICATOR <- rep(0,length(data$EVTYPE))
+for(i in 1:48){
+    inter <- which(data$EVTYPE==Event[i])
+    INDICATOR[inter] <- Event[i]
+    index <- c(index,inter)
+    inter <- NULL
+}
+data1 <- cbind(data[,2],INDICATOR,data[,23:28])
+StormData <- data1[index,]
+colnames(StormData) <- c("BGN_DATE","EVTYPE","FATALITIES","INJURIES",
+                         "PROPDMG","PROPDMGEXP","CROPDMG","CROPDMGEXP")
+```
+As the report will take a look at the data with respect to time interval, an extra column defining the occured time of event is appended to the StormData as well. 10 years are considered as one interval in this case.
+```{r,echo=TRUE}
+YEAR <- rep(0,length(StormData$BGN_DATE))
+inter <- grep(195,StormData$BGN_DATE)
+YEAR[inter] <- 1950
+inter <- grep(196,StormData$BGN_DATE)
+YEAR[inter] <- 1960 
+inter <- grep(197,StormData$BGN_DATE)
+YEAR[inter] <- 1970 
+inter <- grep(198,StormData$BGN_DATE)
+YEAR[inter] <- 1980 
+inter <- grep(199,StormData$BGN_DATE)
+YEAR[inter] <- 1990 
+inter <- grep(200,StormData$BGN_DATE)
+YEAR[inter] <- 2000 
+inter <- grep(201,StormData$BGN_DATE)
+YEAR[inter] <- 2010 
+StormData <- cbind(StormData,YEAR)
+```
+
+## Results
+
+## The weather event that has the largest effect on fatalies and injuries across US during 1950-2011
+To begin with, fatalities for all type of events are displayed:
+```{r, echo=TRUE}
+tapply(StormData$FATALITIES,StormData$EVTYPE,sum)
+```
+The maximum overall fatalities is from Tornado:
+```{r,echo=TRUE}
+max(tapply(StormData$FATALITIES,StormData$EVTYPE,sum),na.rm=TRUE)
+```
+Second, injuries for all event types would be:
+```{r,echo=TRUE}
+tapply(StormData$INJURIES,StormData$EVTYPE,sum)
+```
+The maximum overall injuries is from Tornado as well:
+```{r,echo=TRUE}
+max(tapply(StormData$INJURIES,StormData$EVTYPE,sum),na.rm=TRUE)
+```
+Following barplot with two panels display the fatalities and injuries from 1950-2011 due to tornado respectively:
+```{r,echo=TRUE}
+index <- which(StormData$EVTYPE=="TORNADO")
+Tornado <- StormData[index,]
+```
+Fatilities related to tornado with respective to years:
+```{r,echo=TRUE}
+tapply(Tornado$FATALITIES,Tornado$YEAR,sum)
+```
+Injuries related to tornado with respective to years:
+```{r,echo=TRUE,fig.height=6,fig.width=6}
+tapply(Tornado$INJURIES,Tornado$YEAR,sum)
+Fatalities <- tapply(Tornado$FATALITIES,Tornado$YEAR,sum)
+Injuries <- tapply(Tornado$INJURIES,Tornado$YEAR,sum)
+Interval <- c(1950,1960,1970,1980,1990,2000,2010)
+par(mfrow=c(2,1))
+barplot(Fatalities,col="blue",xlab="year",ylab="No. of people",
+        main="Fatalities due to Tornado, US, 1950-2011",
+        names.arg=Interval)
+barplot(Injuries,col="green",xlab="year",ylab="No. of people",
+        main="Injuries due to Tornado, US, 1950-2011",
+        names.arg=Interval)
+```
+
+## The weather event that has the largest effect on property and crop damage across US during 1950-2011
+
+Since the number for damage and multiplier which indicates level (thousands,millions,billions) are separated in StormData, a proper processing is essential:
+```{r,echo=TRUE}
+PROPERTY <- rep(0,length(StormData$PROPDMG))
+CROP <- rep(0,length(StormData$CROPDMG))
+for(i in 1:length(PROPERTY)){
+    inter1 <- StormData$PROPDMGEXP[i]
+    inter2 <- StormData$PROPDMG[i]
+    if(inter1=="K"){PROPERTY[i] <- inter2*1e3}
+    if(inter1=="M"){PROPERTY[i] <- inter2*1e6}
+    if(inter1=="B"){PROPERTY[i] <- inter2*1e9}
+    else{PROPERTY[i] <- inter2}
+}
+for(i in 1:length(CROP)){
+    inter1 <- StormData$CROPDMGEXP[i]
+    inter2 <- StormData$CROPDMG[i]
+    if(inter1=="K"){CROP[i] <- inter2*1e3}
+    if(inter1=="M"){CROP[i] <- inter2*1e6}
+    if(inter1=="B"){CROP[i] <- inter2*1e9}
+    else{CROP[i] <- inter2}
+}
+StormData <- cbind(StormData,PROPERTY,CROP)
+```
+Similarly, economic losses on property for all type of events are displayed first:
+```{r,echo=TRUE}
+tapply(StormData$PROPERTY,StormData$EVTYPE,sum)
+```
+From the maximum value, Hurricane/Typhoon has contributed to the largest property loss during 1950-2011:
+```{r,echo=TRUE}
+max(tapply(StormData$PROPERTY,StormData$EVTYPE,sum),na.rm=TRUE)
+```
+Second, economic losses on crop are displayed:
+```{r,echo=TRUE}
+tapply(StormData$CROP,StormData$EVTYPE,sum)
+```
+From the maximum value, Hail is the event that leads to biggest effect on crop loss:
+```{r,echo=TRUE}
+max(tapply(StormData$CROP,StormData$EVTYPE,sum),na.rm=TRUE)
+```
+Hence proper barplot showing the two type of events and related economic losses is diplayed as following with separate panels:
+```{r,echo=TRUE}
+index <- which(StormData$EVTYPE=="HURRICANE/TYPHOON")
+Hur_Typ <- StormData[index,]
+index <- which(StormData$EVTYPE=="HAIL")
+Hail <- StormData[index,]
+```
+Property loss related to hurricane/typhoon with respective to years:
+```{r,echo=TRUE}
+tapply(Hur_Typ$PROPERTY,Hur_Typ$YEAR,sum)
+```
+Crop loss related to hail with respective to years:
+```{r,echo=TRUE,fig.height=6,fig.width=6}
+tapply(Hail$CROP,Hail$YEAR,sum)
+inter <- tapply(Hur_Typ$PROPERTY,Hur_Typ$YEAR,sum)
+Property <- c(0,0,0,0,0,inter,0)
+names(Property)<-Interval
+Crop <- tapply(Hail$CROP,Hail$YEAR,sum)
+par(mfrow=c(2,1))
+barplot(Property/1e6,col="blue",xlab="year",ylab="Million Dollars",
+        main="Property loss due to Hurricane/Typhoon, US, 1950-2011",
+        names.arg=Interval)
+barplot(Crop/1e3,col="green",xlab="year",ylab="Thousand Dollars",
+        main="Crop loss due to Hail, US, 1950-2011",
+        names.arg=Interval)
+```
+
+## At last, the entire population health and economic losses with all types of events are explored below
+Fatilities due to all weather events with respective to years:
+```{r,echo=TRUE}
+tapply(StormData$FATALITIES,StormData$YEAR,sum)
+```
+Injuries due to all weather events with respective to years:
+```{r,echo=TRUE}
+tapply(StormData$INJURIES,StormData$YEAR,sum)
+```
+Property losses related to all weather events with respective to years:
+```{r,echo=TRUE}
+tapply(StormData$PROPERTY,StormData$YEAR,sum)
+```
+Crop losses related to all weather events with respective to years:
+```{r,echo=TRUE}
+tapply(StormData$CROP,StormData$YEAR,sum)
+Fatalities <- tapply(StormData$FATALITIES,StormData$YEAR,sum)
+Injuries <- tapply(StormData$INJURIES,StormData$YEAR,sum)
+Property <- tapply(StormData$PROPERTY,StormData$YEAR,sum)
+Crop <- tapply(StormData$CROP,StormData$YEAR,sum)
+Health <- rbind(Fatalities,Injuries)
+Economy <- rbind(Property,Crop)
+```
+Barplots are displayed in following:
+```{r,echo=TRUE,fig.height=6,fig.width=6}
+par(mfrow=c(2,1))
+barplot(Health,xlab="year",ylab="No. of people",
+        main="Population Health due to Weather, US, 1950-2011",
+        legend=rownames(Health),col=c("blue","red"),
+        args.legend=list(x="topleft"))
+barplot(Economy/1e6,xlab="year",ylab="Million dollars",
+        main="Economic loss due to Weather, US, 1950-2011",
+        legend=rownames(Economy),col=c("blue","red"),
+        args.legend=list(x="topleft"))
+```
