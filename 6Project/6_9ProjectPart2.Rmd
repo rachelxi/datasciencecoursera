@@ -1,0 +1,68 @@
+---
+title: "Statistical Inference Part2 Tooth Growth"
+author: "rachelxi"
+date: "27 April 2015"
+output: html_document
+---
+##Loading Data and Basic Analysis
+Firstly, we output the names of the data
+```{r,echo=TRUE}
+data(ToothGrowth)
+names(ToothGrowth)
+```
+Then the first 10 lines of the data
+```{r,echo=TRUE}
+head(ToothGrowth)
+```
+And also the size of the data (60 observations, 3 variables)
+```{r,echo=TRUE}
+dim(ToothGrowth)
+```
+Also, by looking at the help files, we know the data describes: The response is the length of odontoblasts (teeth) in each of 10 guinea pigs at each of three dose levels of Vitamin C (0.5, 1, and 2 mg) with each of two delivery methods (orange juice or ascorbic acid).
+Then we can carry exploratory analysis to the data with plot:
+```{r,echo=TRUE}
+library(ggplot2)
+p <- ggplot(ToothGrowth,aes(x=dose,y=len,colour=supp))+geom_boxplot()
+p+theme_bw()+facet_grid(dose~supp)+labs(title="Tooth Growth of 10 Guinea Pigs")
+```
+
+##Summary of Data
+We can perform the summary of data by separating supplement type and dose, calculating the mean, variance and standard deviation respectively:
+```{r,echo=TRUE}
+library(plyr)
+ddply(ToothGrowth,.(supp,dose),summarize,mean=mean(len),var=var(len),sd=sd(len))
+```
+##Hypothesis Test and Confidence Level (95%)
+Before we conduct the t test, it is essetial to process the data first
+```{r,echo=TRUE}
+inter <- split(ToothGrowth,ToothGrowth$dose)
+inter2 <- split(ToothGrowth,ToothGrowth$supp)
+suppOJ <- inter2[[1]]
+suppVC <- inter2[[2]]
+```
+Then first t test is about length to supplement with dose=0.5mg
+```{r,echo=TRUE}
+t.test(len~supp,data=inter[[1]],paired=FALSE)
+```
+Then second t test is about length to supplement with dose=1.0mg
+```{r,echo=TRUE}
+t.test(len~supp,data=inter[[2]],paired=FALSE)
+```
+Then third t test is about length to supplement with dose=2.0mg
+```{r,echo=TRUE}
+t.test(len~supp,data=inter[[3]],paired=FALSE)
+```
+The fourth t test is about length to dose with supplement=OJ(orange juice)
+```{r,echo=TRUE}
+t.test(suppOJ$dose,suppOJ$len,paired=FALSE)
+```
+The fifth t test is about length to dose with supplement=VC(ascorbic acid)
+```{r,echo=TRUE}
+t.test(suppVC$dose,suppVC$len,paired=FALSE)
+```
+##Assumptions and Conclusions
+The t tests are using default settings because I assume there is no paired relations between the tested data; confidence interval is calculated with "two.sided" method; the variances of two are assumed to be non-equal.
+
+For different supplements, the pigs given orange juice seem to have a higher average in tooth length than that given ascorbic acid (under same dose quantity). Besides, with the same supplement for vitamin C, the more doses pig has taken, the longer tooth it seems to have.
+
+The last part is about p values. Then third t test is about length to supplement with dose=2.0mg, and calculated p value is large, which indicating hypothesis would be accepted. For other four test, however, the null hypotheses are true.
